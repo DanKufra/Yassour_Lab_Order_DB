@@ -2,7 +2,7 @@ import argparse as argparse
 import numpy as np
 from gui_interface import gui_create_db, gui_load_db, gui_option_window, \
     gui_add_order, gui_update_order, gui_message, gui_get_order_id, gui_query
-from db_utils import db_connect, init_db, create_order, update_order, get_order_by_id, delete_order_by_id, ACTION_ENUM
+from db_utils import db_connect, init_db, create_order, update_order, get_order_by_id, delete_order_by_id, query_db_utils, ACTION_ENUM
 
 
 def create_new_db():
@@ -60,29 +60,28 @@ def create_query(values):
     num_conds = 0
     if values['id_filter'] != '':
         if values['id_filter'] == 'RANGE':
-            query += 'id >= %d and id <= %d )' %(values['id_start'],values['id_end']) 
+            query += '(id >= %d and id <= %d )' %(values['id_start'],values['id_end']) 
         else:
             query += '(id %s %d)' %(values['id_filter'], values['id_start'])
         num_conds += 1
-    print(values)
     if values['price_filter'] != '':
         if num_conds > 0:
             query += ' AND '
         if values['price_filter'] == 'RANGE':
-            query += 'price >= %f and price <= %f )' %(values['price_start'],values['price_end']) 
+            query += '(price >= %f and price <= %f )' %(values['price_start'],values['price_end']) 
         else:
             query += '(price %s %f)' %(values['price_filter'], values['price_start'])
 
     if values['distributor'] != '':
         if num_conds > 0:
             query += ' AND '
-        query += '(distributor = %s ) ' % values['distributor'] 
+        query += '(distributor = "%s" ) ' % values['distributor'] 
 
     if values['item'] != '':
         if num_conds > 0:
             query += ' AND '
-        query += '(item = %s ) ' % values['item']
-    print(query)
+        query += '(item = "%s" ) ' % values['item']
+    return query
 
 def query_db(db_path):
     con = db_connect(db_path)
@@ -94,7 +93,9 @@ def query_db(db_path):
     cur.execute(unique_items_sql)
     unique_items = cur.fetchall()
     query_values = gui_query(unique_distributors, unique_items)
-    create_query(query_values)
+    query_sql = create_query(query_values)
+    print(query_sql)
+    print(query_db_utils(db_path, query_sql))
 
 def parse_args():
     parser = argparse.ArgumentParser()

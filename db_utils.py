@@ -82,3 +82,11 @@ def delete_order_by_id(db_path, id):
     order_id_get_sql = "DELETE FROM orders WHERE id = %d" % id
     cur.execute(order_id_get_sql)
     con.commit()
+
+
+def query_db_utils(db_path, query_sql):
+    con = db_connect(db_path)
+    cur = con.cursor()
+    cur.execute(query_sql)
+    items = cur.fetchall()
+    return items
