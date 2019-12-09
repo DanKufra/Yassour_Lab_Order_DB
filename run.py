@@ -55,6 +55,35 @@ def delete_order_in_db(db_path):
     # TODO how to catch failure?
     gui_message('Order deleted from DB.')
 
+def create_query(values):
+    query = "SELECT * FROM orders WHERE "
+    num_conds = 0
+    if values['id_filter'] != '':
+        if values['id_filter'] == 'RANGE':
+            query += 'id >= %d and id <= %d )' %(values['id_start'],values['id_end']) 
+        else:
+            query += '(id %s %d)' %(values['id_filter'], values['id_start'])
+        num_conds += 1
+    print(values)
+    if values['price_filter'] != '':
+        if num_conds > 0:
+            query += ' AND '
+        if values['price_filter'] == 'RANGE':
+            query += 'price >= %f and price <= %f )' %(values['price_start'],values['price_end']) 
+        else:
+            query += '(price %s %f)' %(values['price_filter'], values['price_start'])
+
+    if values['distributor'] != '':
+        if num_conds > 0:
+            query += ' AND '
+        query += '(distributor = %s ) ' % values['distributor'] 
+
+    if values['item'] != '':
+        if num_conds > 0:
+            query += ' AND '
+        query += '(item = %s ) ' % values['item']
+    print(query)
+
 def query_db(db_path):
     con = db_connect(db_path)
     cur = con.cursor()
@@ -65,7 +94,7 @@ def query_db(db_path):
     cur.execute(unique_items_sql)
     unique_items = cur.fetchall()
     query_values = gui_query(unique_distributors, unique_items)
-    
+    create_query(query_values)
 
 def parse_args():
     parser = argparse.ArgumentParser()

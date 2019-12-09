@@ -131,11 +131,11 @@ def gui_query(unique_distributors, unique_items):
     # All the stuff inside your window.
     layout = [[sg.Text('Please enter your query:')],
               [sg.Text('id: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='id_filter'), sg.InputText(key='id_start'), sg.InputText(key='id_end')],
-              [sg.Text('Distributor: '), sg.Combo(unique_distributors)],
+              [sg.Text('Distributor: '), sg.Combo(unique_distributors, key='distributor')],
               [sg.Text('Price: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='price_filter'), sg.InputText(key='price_start'), sg.InputText(key='price_end')],
               [sg.Text('Order Date: '), sg.CalendarButton('Order Date Start', key='date_start', disabled=False, focus=True), 
                                         sg.CalendarButton('Order Date End', key='date_end', disabled=False, focus=True)],
-              [sg.Text('Item: '), sg.Combo(unique_items)],
+              [sg.Text('Item: '), sg.Combo(unique_items, key='item')],
               [sg.Button('Ok'), sg.Button('Cancel')]]
     # Create the Window
     window = sg.Window('Query Orders', layout)
