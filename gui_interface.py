@@ -119,7 +119,6 @@ def gui_add_order():
         while True:  # The Event Loop
             event, values = window.read()
             if event in (None, 'Finished'):
-                items_values = None
                 break
             if event in ('Add'):
                 try:

@@ -20,6 +20,7 @@ def load_db():
 
 def add_order_to_db(db_path):
     order_values, items_values = gui_add_order()
+    print(order_values, items_values)
     if order_values is None or items_values is None:
         gui_message('Order not added properly.')
         return
@@ -58,7 +59,7 @@ def update_order_in_db(db_path, order_id=None, item_id=None):
 
     if item_id is None:
         id = update_order(db_path=db_path, order_id=order_id, distributor=order['distributor'], SAP_number=order['SAP_number'],
-                          grant_number=order['grant_number'], sivug_number=order['sivug_number'], order_date=order['date'])
+                          grant_number=order['grant_number'], sivug_number=order['sivug_number'], order_date=order['date_picked'])
     else:
         id = update_order(db_path=db_path, order_id=order_id, item_id=item_id, item=order['item'],
                           price=order['price'], description=order['description'])

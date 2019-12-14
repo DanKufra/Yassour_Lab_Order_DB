@@ -57,6 +57,8 @@ def create_order(db_path, order_id, item_id, distributor, price, order_date, ite
         values_to_add += ',?'
     order_insert_sql = "INSERT INTO orders (%s) VALUES (%s)" % (columns_to_add, values_to_add)
     #TODO will these be null if not available? If so can I get rid of dynamic sql string?
+    import pdb
+    pdb.set_trace()
     cur.execute(order_insert_sql, (item_id, order_id, distributor, price, order_date, item, description, datetime.datetime.now(), SAP_number, grant_number, sivug_number))
     con.commit()
     con.close()
@@ -139,6 +141,7 @@ def delete_order_by_id(db_path, order_id, item_id=None):
     cur.execute(order_id_get_sql)
     con.commit()
     con.close()
+
 
 def query_db_utils(db_path, query_sql):
     con = db_connect(db_path)
