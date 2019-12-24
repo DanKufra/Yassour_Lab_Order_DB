@@ -48,7 +48,7 @@ def update_order_in_db(db_path, order_id=None, item_id=None):
         gui_message('Order id does not exist.')
         return
 
-    # if item_id is None then update just the order values, otherwise update the item #TODO
+    # if item_id is None then update just the order values, otherwise update the item
     if item_id is None:
         order = gui_update_order(original_order[0])
     else:
@@ -64,7 +64,6 @@ def update_order_in_db(db_path, order_id=None, item_id=None):
     else:
         id = update_order(db_path=db_path, order_id=order_id, item_id=item_id, item=order['item'],
                           price=order['price'], description=order['description'])
-    # TODO how to catch failure?
     gui_message('Order updated in DB.')
 
 
