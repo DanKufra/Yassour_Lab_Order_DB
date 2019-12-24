@@ -29,7 +29,7 @@ def add_order_to_db(db_path):
         id = create_order(db_path=db_path, item_id=i+1, order_id=order_id, distributor=order_values['distributor'],
                           order_date=order_values['date_picked'],
                           sivug_number=order_values['sivug_number'], grant_number=order_values['grant_number'],
-                          SAP_number=order_values['SAP_number'],
+                          SAP_number=order_values['SAP_number'], order_file=order_values['order_file'], price_quote_file=order_values['price_quote_file'],
                           price=item['price'], item=item['item'], description=item['description'])
     # TODO how to catch failure?
     gui_message('Order added to DB.')
@@ -59,7 +59,8 @@ def update_order_in_db(db_path, order_id=None, item_id=None):
 
     if item_id is None:
         id = update_order(db_path=db_path, order_id=order_id, distributor=order['distributor'], SAP_number=order['SAP_number'],
-                          grant_number=order['grant_number'], sivug_number=order['sivug_number'], order_date=order['date_picked'])
+                          grant_number=order['grant_number'], sivug_number=order['sivug_number'], order_date=order['date_picked'],
+                          order_file=order['order_file'], price_quote_file=order['price_quote_file'])
     else:
         id = update_order(db_path=db_path, order_id=order_id, item_id=item_id, item=order['item'],
                           price=order['price'], description=order['description'])
@@ -101,36 +102,43 @@ def create_query(values):
             query += '(price >= %f and price <= %f )' % (values['price_start'], values['price_end'])
         else:
             query += '(price %s %f)' % (values['price_filter'], values['price_start'])
+        num_conds += 1
     if values['distributor'] != '':
         if num_conds == 0:
             query += ' WHERE '
         if num_conds > 0:
             query += ' AND '
         query += '(distributor = "%s" ) ' % values['distributor']
+        num_conds += 1
     if values['item'] != '':
         if num_conds == 0:
             query += ' WHERE '
         if num_conds > 0:
             query += ' AND '
         query += '(item = "%s" ) ' % values['item']
+        num_conds += 1
     if values['SAP_number'] != '':
         if num_conds == 0:
             query += ' WHERE '
         if num_conds > 0:
             query += ' AND '
         query += '(SAP_number = "%s" ) ' % values['SAP_number']
+        num_conds += 1
     if values['grant_number'] != '':
         if num_conds == 0:
             query += ' WHERE '
         if num_conds > 0:
             query += ' AND '
         query += '(grant_number = "%s" ) ' % values['grant_number']
+        num_conds += 1
     if values['sivug_number'] != '':
         if num_conds == 0:
             query += ' WHERE '
         if num_conds > 0:
             query += ' AND '
         query += '(sivug_number = "%s" ) ' % values['sivug_number']
+        num_conds += 1
+    print(query)
     return query
 
 
@@ -158,7 +166,7 @@ def query_db(db_path):
     items = query_db_utils(db_path, query_sql)
 
     df = pd.DataFrame(items, columns=['Id', 'Order Id', 'Distributor', 'Price', 'Order Date', 'Item', 'Description',
-                                      'SAP Number', 'Grant Number', 'Sivug Number', 'Date Added'])
+                                      'SAP Number', 'Grant Number', 'Sivug Number', 'Order File', 'Price Quote File', 'Date Added'])
     gui_show_query_table(db_path, df)
 
 

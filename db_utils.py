@@ -10,7 +10,7 @@ DEFAULT_PATH = os.path.join(os.path.dirname('/cs/usr/dan_kufra/Avital_DB/'), 'da
 COLUMN_INDEX = {'id' : 0, 'order_id': 1, 'distributor': 2,
                 'price': 3, 'order_date': 4, 'item': 5,
                 'description': 6, 'SAP_number': 7, 'grant_number': 8,
-                'sivug_number': 9, 'date_added': 10}
+                'sivug_number': 9, 'order_file': 10, 'price_quote_file': 11, 'date_added': 12}
 order_sql = """
 CREATE TABLE orders (
      id integer NOT NULL,
@@ -23,6 +23,8 @@ CREATE TABLE orders (
      SAP_number integer,
      grant_number integer,
      sivug_number integer,
+     order_file text    ,
+     price_quote_file text,
      date_added timestamp NOT NULL)
 """
 
@@ -42,7 +44,8 @@ def db_connect(db_path=DEFAULT_PATH):
     return con
 
 
-def create_order(db_path, order_id, item_id, distributor, price, order_date, item, description, SAP_number=None, grant_number=None, sivug_number=None):
+def create_order(db_path, order_id, item_id, distributor, price, order_date, item, description,
+                 SAP_number=None, grant_number=None, sivug_number=None, order_file=None, price_quote_file=None):
     con = db_connect(db_path)
     cur = con.cursor()
     columns_to_add = 'id, order_id, distributor, price, order_date, item, description, date_added'
@@ -52,6 +55,10 @@ def create_order(db_path, order_id, item_id, distributor, price, order_date, ite
         columns_to_add += ', grant_number'
     if sivug_number is not None:
         columns_to_add += ', sivug_number'
+    if order_file is not None:
+        columns_to_add += ', order_file'
+    if price_quote_file is not None:
+        columns_to_add += ', price_quote_file'
     values_to_add = '?'
     for i in range(len(columns_to_add.split(',')) - 1):
         values_to_add += ',?'
@@ -59,14 +66,14 @@ def create_order(db_path, order_id, item_id, distributor, price, order_date, ite
     #TODO will these be null if not available? If so can I get rid of dynamic sql string?
     # import pdb
     # pdb.set_trace()
-    cur.execute(order_insert_sql, (item_id, order_id, distributor, price, order_date, item, description, datetime.datetime.now(), SAP_number, grant_number, sivug_number))
+    cur.execute(order_insert_sql, (item_id, order_id, distributor, price, order_date, item, description, datetime.datetime.now(), SAP_number, grant_number, sivug_number, order_file, price_quote_file))
     con.commit()
     con.close()
     return cur.lastrowid
 
 
 def update_order(db_path, order_id, item_id=None, distributor=None, price=None, order_date=None, item=None, description=None,
-                 SAP_number=None, grant_number=None, sivug_number=None):
+                 SAP_number=None, grant_number=None, sivug_number=None, order_file=None, price_quote_file=None):
     con = db_connect(db_path)
     cur = con.cursor()
 
@@ -101,6 +108,14 @@ def update_order(db_path, order_id, item_id=None, distributor=None, price=None, 
     if distributor is not None:
         update_sql = "UPDATE orders SET distributor = ? WHERE order_id = ?"
         cur.execute(update_sql, (distributor, order_id))
+        con.commit()
+    if order_file is not None:
+        update_sql = "UPDATE orders SET order_file = ? WHERE order_id = ?"
+        cur.execute(update_sql, (order_file, order_id))
+        con.commit()
+    if price_quote_file is not None:
+        update_sql = "UPDATE orders SET price_quote_file = ? WHERE order_id = ?"
+        cur.execute(update_sql, (price_quote_file, order_id))
         con.commit()
     con.close()
     return cur.lastrowid

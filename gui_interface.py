@@ -92,6 +92,8 @@ def gui_add_order():
               [sg.Text('SAP number: '), sg.InputText(key='SAP_number')],
               [sg.Text('Grant: '), sg.InputText(key='grant_number')],
               [sg.Text('Sivug: '), sg.InputText(key='sivug_number')],
+              [sg.Text('Order File: '), sg.In(key='order_file'), sg.FileBrowse()],
+              [sg.Text('Price Quote File: '), sg.In(key='price_quote_file'), sg.FileBrowse()],
               [sg.Button('Ok'), sg.Button('Cancel')]]
     # Create the Window
     window = sg.Window('Add Order', layout)
@@ -105,7 +107,6 @@ def gui_add_order():
         if event in ('Ok'):
             break
     window.close()
-
     if get_item:
         # add items to order
         layout = [[sg.Text('Please enter your item:')],
@@ -148,6 +149,8 @@ def gui_update_order(original_order):
               [sg.Text('Sivug Number: '), sg.InputText(original_order[COLUMN_INDEX['sivug_number']], key='sivug_number')],
               [sg.CalendarButton('Order Date', key='date', disabled=False, focus=True, target='date_picked', format='%Y-%m-%d'),
                sg.InputText(original_order[COLUMN_INDEX['order_date']], key='date_picked')],
+              [sg.Text('Order File: '), sg.In(key='order_file'), sg.FileBrowse()],
+              [sg.Text('Price Quote File: '), sg.In(key='price_quote_file'), sg.FileBrowse()],
               [sg.Button('Ok'), sg.Button('Cancel')]]
     # Create the Window
     window = sg.Window('Update Order', layout)
