@@ -1,3 +1,0 @@
-2. Allow update from query result window
-6. Fix calendar for mac???
-7. Show totals of grants??? Can use magic number
