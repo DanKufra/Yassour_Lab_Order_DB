@@ -281,9 +281,9 @@ def show_grant_and_sivugim(db_path):
                 percentage_spent = 0.0
             else:
                 percentage_spent = np.round(sivug_spent / float(sivug_total), decimals=2)
-            sivug_remaining = locale.format("%.2f", sivug_remaining, grouping=True)
-            sivug_total = locale.format("%.2f", sivug_total, grouping=True)
-            sivug_spent = locale.format("%.2f", sivug_spent, grouping=True)
+            sivug_remaining = locale.format_string("%.2f", sivug_remaining, grouping=True)
+            sivug_total = locale.format_string("%.2f", sivug_total, grouping=True)
+            sivug_spent = locale.format_string("%.2f", sivug_spent, grouping=True)
             cur_sivug_info = {"Grant Number": grant, "Sivug Number": sivug, "Sivug Total": sivug_total,
                               "Sivug Spent": sivug_spent, "Sivug Remaining": sivug_remaining,
                               "Percentage Spent": percentage_spent, "Shared Index": str(cur_sivug['Shared']),
@@ -292,6 +292,7 @@ def show_grant_and_sivugim(db_path):
                               "Amount Shared Remaining": shared_dict[cur_sivug['Shared']]['Remaining']}
             sivug_info_df = sivug_info_df.append(cur_sivug_info, ignore_index=True)
     gui_sivug_summary(db_path, sivug_info_df)
+
 
 def parse_args():
     parser = argparse.ArgumentParser()

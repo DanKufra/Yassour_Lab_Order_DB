@@ -39,7 +39,6 @@ def gui_load_db():
               [sg.Button('Ok'), sg.Button('Cancel')]]
     # Create the Window
     window = sg.Window('Load Database', layout)
-
     event, database_file_path = window.read()
 
     window.close()
@@ -293,15 +292,16 @@ def setup_table(df, name, buttons):
 
     layout = [[sg.Table(values=data,
                         headings=header_list,
-                        display_row_numbers=False,
-                        auto_size_columns=False,
+                        display_row_numbers=True,
+                        auto_size_columns=True,
                         num_rows=min(25, len(data)),
                         alternating_row_color='lightblue',
                         key=name,
+                        font=10,
                         select_mode='extended')],
               button_list]
     from run import update_order_in_db
-    window = sg.Window(name, layout, grab_anywhere=False)
+    window = sg.Window(name, layout, grab_anywhere=False, resizable=True)
     return window
 
 
