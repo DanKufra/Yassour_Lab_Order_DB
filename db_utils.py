@@ -2,7 +2,7 @@ import os
 import sqlite3
 import datetime
 
-ACTION_ENUM = {'ADD': 0, 'UPDATE': 1, 'DELETE': 2, 'QUERY': 3, 'EXIT': 4}
+ACTION_ENUM = {'ADD': 0, 'UPDATE': 1, 'DELETE': 2, 'QUERY': 3, 'GRANTS': 4, 'GRANTS_SIVUG': 5, 'EXIT': 6}
 
 # create a default path to connect to and create (if necessary) a database
 # called 'database.sqlite3' in the same directory as this script
@@ -21,8 +21,8 @@ CREATE TABLE orders (
      item text NOT NULL,
      description text NOT NULL,
      SAP_number integer,
-     grant_number integer,
-     sivug_number integer,
+     grant_number text,
+     sivug_number text,
      order_file text    ,
      price_quote_file text,
      date_added timestamp NOT NULL)
@@ -73,7 +73,6 @@ def update_order(db_path, order_id, item_id=None, distributor=None, price=None, 
                  SAP_number=None, grant_number=None, sivug_number=None, order_file=None, price_quote_file=None):
     con = db_connect(db_path)
     cur = con.cursor()
-
     if price is not None and item_id is not None:
         update_sql = "UPDATE orders SET price = ? WHERE ((order_id = ?) AND (id = ?))"
         cur.execute(update_sql, (price, order_id, item_id))

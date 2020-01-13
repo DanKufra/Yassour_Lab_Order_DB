@@ -1,11 +1,16 @@
 import argparse as argparse
 import numpy as np
 import pandas as pd
+import locale
+import subprocess
 from gui_interface import gui_create_db, gui_load_db, gui_option_window, \
-    gui_add_order, gui_update_order, gui_update_item, gui_message, gui_get_order_id, gui_query, gui_show_query_table
+    gui_add_order, gui_update_order, gui_update_item, gui_message, \
+    gui_get_order_id, gui_query, gui_show_query_table, gui_grants, gui_sivugim, gui_sivug_summary
 from db_utils import db_connect, init_db, create_order, update_order, get_order_by_id, delete_order_by_id, get_next_order_id, \
     query_db_utils, ACTION_ENUM, COLUMN_INDEX
+from grant_consts import GRANT_DICTS
 
+locale.setlocale(locale.LC_ALL, 'en_US')
 
 def create_new_db():
     db_path = gui_create_db()
@@ -169,6 +174,125 @@ def query_db(db_path):
     gui_show_query_table(db_path, df)
 
 
+def show_grant_totals(db_path):
+    con = db_connect(db_path)
+    cur = con.cursor()
+    grant_info_df = pd.DataFrame(columns=['Grant Number', 'Grant Total',
+                                          'Grant Spent', 'Grant Remaining',
+                                          'Percentage Spent'])
+    for grant in GRANT_DICTS.keys():
+        cur_grant = GRANT_DICTS[grant]
+        # get total money for that grant
+        grant_total = np.sum([cur_grant[sivug]['Amount'] for sivug in cur_grant])
+        grant_spent_sql = "SELECT price FROM orders WHERE grant_number = %s" %grant
+        cur.execute(grant_spent_sql)
+        grant_item_prices = cur.fetchall()
+        if len(grant_item_prices) > 0:
+            grant_spent = np.sum(grant_item_prices)
+        else:
+            grant_spent = 0
+        grant_remaining = grant_total - grant_spent
+        percentage_spent = np.round(grant_spent / float(grant_total), decimals=2)
+        grant_remaining = locale.format_string("%.2f", grant_remaining, grouping=True)
+        grant_total = locale.format_string("%.2f", grant_total, grouping=True)
+        grant_spent = locale.format_string("%.2f", grant_spent, grouping=True)
+        cur_grant_info = {"Grant Number": grant, "Grant Total": grant_total,
+                          "Grant Spent": grant_spent, "Grant Remaining": grant_remaining,
+                          "Percentage Spent": percentage_spent}
+        grant_info_df = grant_info_df.append(cur_grant_info, ignore_index=True)
+    gui_grants(db_path, grant_info_df)
+
+
+def show_sivugim(db_path, grant_info, all_grants=False):
+    con = db_connect(db_path)
+    cur = con.cursor()
+    cur_grant = GRANT_DICTS[grant_info['Grant Number']]
+    sivug_info_df = pd.DataFrame(columns=['Sivug Number', 'Sivug Total',
+                                          'Sivug Spent', 'Sivug Remaining',
+                                          'Percentage Spent'])
+    for sivug in cur_grant.keys():
+        cur_sivug = cur_grant[sivug]
+        sivug_total = cur_sivug['Amount']
+        sivug_spent_sql = "SELECT price FROM orders WHERE sivug_number = %s" % sivug
+        if not all_grants:
+            sivug_spent_sql += " AND grant_number = %s" % grant_info['Grant Number']
+        cur.execute(sivug_spent_sql)
+        sivug_item_prices = cur.fetchall()
+        if len(sivug_item_prices) > 0:
+            sivug_spent = np.sum(sivug_item_prices)
+        else:
+            sivug_spent = 0
+        sivug_remaining = sivug_total - sivug_spent
+        if sivug_total == 0.0:
+            percentage_spent = 0.0
+        else:
+            percentage_spent = np.round(sivug_spent / float(sivug_total), decimals=2)
+        sivug_remaining = locale.format_string("%.2f", sivug_remaining, grouping=True)
+        sivug_total = locale.format_string("%.2f", sivug_total, grouping=True)
+        sivug_spent = locale.format_string("%.2f", sivug_spent, grouping=True)
+        cur_sivug_info = {"Sivug Number": sivug, "Sivug Total": sivug_total,
+                          "Sivug Spent": sivug_spent, "Sivug Remaining": sivug_remaining,
+                          "Percentage Spent": percentage_spent}
+        sivug_info_df = sivug_info_df.append(cur_sivug_info, ignore_index=True)
+    # get all sivugim totals
+    gui_sivugim(db_path, grant_info, sivug_info_df, all_grants)
+
+
+def show_grant_and_sivugim(db_path):
+    con = db_connect(db_path)
+    cur = con.cursor()
+    sivug_info_df = pd.DataFrame(columns=['Grant Number', 'Sivug Number', 'Sivug Total',
+                                          'Sivug Spent', 'Sivug Remaining',
+                                          'Percentage Spent', 'Shared Index', 'Amount Shared Total',
+                                          'Amount Shared Spent', 'Amount Shared Remaining'])
+    for grant in GRANT_DICTS.keys():
+        cur_grant = GRANT_DICTS[grant]
+        shared_dict = {}
+        for sivug in cur_grant.keys():
+            cur_sivug = cur_grant[sivug]
+            if cur_sivug['Shared'] not in shared_dict.keys():
+                shared_dict[cur_sivug['Shared']] = {'Total': 0, 'Spent': 0}
+            shared_dict[cur_sivug['Shared']]['Total'] += cur_sivug['Amount']
+
+        shared_spent_sql = "SELECT sivug_number, price FROM orders WHERE grant_number = %s" % grant
+        cur.execute(shared_spent_sql)
+        sivug_item_prices = cur.fetchall()
+        for item in sivug_item_prices:
+            shared_dict[cur_grant[str(item[0])]['Shared']]['Spent'] += item[1]
+
+        for k, v in shared_dict.items():
+            shared_dict[k]['Remaining'] = v['Total'] - v['Spent']
+            shared_dict[k]['Total'] = locale.format_string("%.2f", shared_dict[k]['Total'], grouping=True)
+            shared_dict[k]['Spent'] = locale.format_string("%.2f", shared_dict[k]['Spent'], grouping=True)
+            shared_dict[k]['Remaining'] = locale.format_string("%.2f", shared_dict[k]['Remaining'], grouping=True)
+
+        for sivug in cur_grant.keys():
+            cur_sivug = cur_grant[sivug]
+            sivug_total = cur_sivug['Amount']
+            sivug_spent_sql = "SELECT price FROM orders WHERE sivug_number = %s AND grant_number = %s" % (sivug, grant)
+            cur.execute(sivug_spent_sql)
+            sivug_item_prices = cur.fetchall()
+            if len(sivug_item_prices) > 0:
+                sivug_spent = np.sum(sivug_item_prices)
+            else:
+                sivug_spent = 0
+            sivug_remaining = sivug_total - sivug_spent
+            if sivug_total == 0.0:
+                percentage_spent = 0.0
+            else:
+                percentage_spent = np.round(sivug_spent / float(sivug_total), decimals=2)
+            sivug_remaining = locale.format("%.2f", sivug_remaining, grouping=True)
+            sivug_total = locale.format("%.2f", sivug_total, grouping=True)
+            sivug_spent = locale.format("%.2f", sivug_spent, grouping=True)
+            cur_sivug_info = {"Grant Number": grant, "Sivug Number": sivug, "Sivug Total": sivug_total,
+                              "Sivug Spent": sivug_spent, "Sivug Remaining": sivug_remaining,
+                              "Percentage Spent": percentage_spent, "Shared Index": str(cur_sivug['Shared']),
+                              "Amount Shared Total": shared_dict[cur_sivug['Shared']]['Total'],
+                              "Amount Shared Spent": shared_dict[cur_sivug['Shared']]['Spent'],
+                              "Amount Shared Remaining": shared_dict[cur_sivug['Shared']]['Remaining']}
+            sivug_info_df = sivug_info_df.append(cur_sivug_info, ignore_index=True)
+    gui_sivug_summary(db_path, sivug_info_df)
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('mode', type=str,
@@ -198,5 +322,9 @@ if __name__ == '__main__':
             delete_order_in_db(db_path)
         elif action == ACTION_ENUM['QUERY']:
             query_db(db_path)
+        elif action == ACTION_ENUM['GRANTS']:
+            show_grant_totals(db_path)
+        elif action == ACTION_ENUM['GRANTS_SIVUG']:
+            show_grant_and_sivugim(db_path)
         elif action == ACTION_ENUM['EXIT']:
             break

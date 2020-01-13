@@ -1,5 +1,6 @@
 import PySimpleGUI as sg
 import os
+import subprocess
 import datetime
 from db_utils import ACTION_ENUM, COLUMN_INDEX
 sg.change_look_and_feel('TealMono')  # Add a touch of color
@@ -58,7 +59,8 @@ def gui_load_db():
 def gui_option_window():
     # All the stuff inside your window.
     layout = [[sg.Text('Please pick an action:')],
-              [sg.Button('Add'), sg.Button('Update'), sg.Button('Delete'), sg.Button('Query')],
+              [sg.Button('Add'), sg.Button('Update'), sg.Button('Delete'),
+               sg.Button('Query'), sg.Button('Grant Amounts'), sg.Button('Sivug Summary')],
               [sg.Button('Cancel')]]
     # Create the Window
     window = sg.Window('Database Action Options', layout)
@@ -76,6 +78,10 @@ def gui_option_window():
         return ACTION_ENUM['DELETE']
     elif event in 'Query':
         return ACTION_ENUM['QUERY']
+    elif event in 'Grant Amounts':
+        return ACTION_ENUM['GRANTS']
+    elif event in 'Sivug Summary':
+        return ACTION_ENUM['GRANTS_SIVUG']
 
 
 def gui_add_order():
@@ -149,8 +155,8 @@ def gui_update_order(original_order):
               [sg.Text('Sivug Number: '), sg.InputText(original_order[COLUMN_INDEX['sivug_number']], key='sivug_number')],
               [sg.CalendarButton('Order Date', key='date', disabled=False, focus=True, target='date_picked', format='%Y-%m-%d'),
                sg.InputText(original_order[COLUMN_INDEX['order_date']], key='date_picked')],
-              [sg.Text('Order File: '), sg.In(key='order_file'), sg.FileBrowse()],
-              [sg.Text('Price Quote File: '), sg.In(key='price_quote_file'), sg.FileBrowse()],
+              [sg.Text('Order File: '), sg.In(original_order[COLUMN_INDEX['order_file']], key='order_file'), sg.FileBrowse()],
+              [sg.Text('Price Quote File: '), sg.In(original_order[COLUMN_INDEX['price_quote_file']], key='price_quote_file'), sg.FileBrowse()],
               [sg.Button('Ok'), sg.Button('Cancel')]]
     # Create the Window
     window = sg.Window('Update Order', layout)
@@ -278,10 +284,10 @@ def gui_get_order_id():
     return values['order_id'], values['item_id']
 
 
-def gui_show_query_table(db_path, df):
+def setup_table(df, name, buttons):
     sg.set_options(auto_size_buttons=True)
-
-    data = df.values.tolist()               # read everything else into a list of rows
+    button_list = [sg.Button(button_name) for button_name in buttons]
+    data = df.values.tolist()  # read everything else into a list of rows
     # Uses the first row (which should be column names) as columns names
     header_list = list(df.columns.values)
 
@@ -291,11 +297,19 @@ def gui_show_query_table(db_path, df):
                         auto_size_columns=False,
                         num_rows=min(25, len(data)),
                         alternating_row_color='lightblue',
-                        key='query_table',
+                        key=name,
                         select_mode='extended')],
-              [sg.Button('Show total'), sg.Button('Update Order'), sg.Button('Update Item'), sg.Button('Exit')]]
+              button_list]
+    from run import update_order_in_db
+    window = sg.Window(name, layout, grab_anywhere=False)
+    return window
 
-    window = sg.Window('Table', layout, grab_anywhere=False)
+
+def gui_show_query_table(db_path, df):
+    table_key = 'Query Table'
+    window = setup_table(df, table_key, ["Show Total", "Update Order", "Update Item",
+                                         "Open Price Quote", "Open Order File", "Exit"])
+    from run import update_order_in_db
     while True:
         event, values = window.read()
         if event in (None, 'Exit'):
@@ -305,17 +319,84 @@ def gui_show_query_table(db_path, df):
             sg.popup("Total amount: %f" %(df['Price'].sum()))
         elif event in ('Update Order'):
             try:
-                row = df.iloc[values['query_table'][0]]
-                from run import update_order_in_db
+                row = df.iloc[values['Query Table'][0]]
                 update_order_in_db(db_path, int(row['Order Id']))
             except IndexError:
                 sg.popup("Must select row for update.")
         elif event in ('Update Item'):
             try:
-                row = df.iloc[values['query_table'][0]]
-                from run import update_order_in_db
+                row = df.iloc[values['Query Table'][0]]
                 update_order_in_db(db_path, int(row['Order Id']), int(row['Id']))
             except IndexError:
                 sg.popup("Must select row for update.")
+        elif event in ('Open Price Quote'):
+            try:
+                row = df.iloc[values['Query Table'][0]]
+                FileName = row['Price Quote File']
+                subprocess.call(['open', FileName])
+            except IndexError:
+                sg.popup("Must select row for opening.")
+        elif event in ('Open Order File'):
+            try:
+                row = df.iloc[values['Query Table'][0]]
+                FileName = row['Order File']
+                subprocess.call(['open', FileName])
+            except IndexError:
+                sg.popup("Must select row for opening.")
     window.close()
 
+
+def gui_grants(db_path, grant_info_df):
+    table_key = "Grant Info Table"
+    window = setup_table(grant_info_df, table_key, ["Show Sivugim", "Exit"])
+    from run import show_sivugim
+    while True:
+        event, values = window.read()
+        if event in (None, 'Exit'):
+            window.close()
+            return
+        elif event in ('Show Sivugim'):
+            try:
+                row = grant_info_df.iloc[values['Grant Info Table'][0]]
+                show_sivugim(db_path=db_path, grant_info=row)
+            except IndexError:
+                sg.popup("Must select row to show sivugim.")
+
+
+def gui_sivugim(db_path, grant_info, sivug_info_df, all_grants=False):
+    if all_grants:
+        table_key = "Sivugim Info Table - In All Grants"
+        buttons = ["Pick Grant", "Exit"]
+    else:
+        table_key = "Sivugim Info Table - In Grant %s" % grant_info['Grant Number']
+        buttons = ["All Grants", "Exit"]
+    window = setup_table(sivug_info_df, table_key, buttons)
+    from run import show_sivugim
+    while True:
+        event, values = window.read()
+        if event in (None, 'Exit'):
+            window.close()
+            return
+        elif event in ('Pick Grant'):
+            try:
+                window.close()
+                show_sivugim(db_path=db_path, grant_info=grant_info, all_grants=False)
+            except IndexError:
+                sg.popup("Must select row to show sivugim.")
+        elif event in ('All Grants'):
+            try:
+                window.close()
+                show_sivugim(db_path=db_path, grant_info=grant_info, all_grants=True)
+            except IndexError:
+                sg.popup("Must select row to show sivugim.")
+
+
+def gui_sivug_summary(db_path, sivug_info_df):
+    table_key = "Sivugim Info Table"
+    buttons = ["Exit"]
+    window = setup_table(sivug_info_df, table_key, buttons)
+    while True:
+        event, values = window.read()
+        if event in (None, 'Exit'):
+            window.close()
+            return
