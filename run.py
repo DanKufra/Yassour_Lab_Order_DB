@@ -12,6 +12,7 @@ from grant_consts import GRANT_DICTS
 
 locale.setlocale(locale.LC_ALL, 'en_US')
 
+
 def create_new_db():
     db_path = gui_create_db()
     init_db(db_path)
@@ -142,7 +143,7 @@ def create_query(values):
             query += ' AND '
         query += '(sivug_number = "%s" ) ' % values['sivug_number']
         num_conds += 1
-    print(query)
+    # print(query)
     return query
 
 
