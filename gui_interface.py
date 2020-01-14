@@ -8,9 +8,9 @@ sg.change_look_and_feel('TealMono')  # Add a touch of color
 
 def gui_create_db():
     # All the stuff inside your window.
-    layout = [[sg.Text('Database Folder: ', font=10), sg.In(), sg.FolderBrowse(font=10)],
-              [sg.Text('Database Name: ', font=10), sg.InputText()],
-              [sg.Button('Ok', font=10), sg.Button('Cancel', font=10)]]
+    layout = [[sg.Text('Database Folder: '), sg.In(), sg.FolderBrowse()],
+              [sg.Text('Database Name: '), sg.InputText()],
+              [sg.Button('Ok'), sg.Button('Cancel')]]
     # Create the Window
     window = sg.Window('Create Database', layout, font=10)
 
@@ -18,16 +18,16 @@ def gui_create_db():
     window.close()
 
     if event in (None, 'Cancel'):
-        sg.popup("Cancel", "No filename supplied", font=10)
-        raise SystemExit("Cancelling: no filename supplied supplied")
+        gui_message("Exiting - No filename supplied")
+        raise SystemExit()
 
     database_file_path = os.path.join(values[0], values[1] + '.sqlite3')
 
     if os.path.exists(database_file_path):
-        sg.popup("Cancel", "File already exists", font=10)
-        raise SystemExit("Cancelling: File already exists")
+        gui_message("Exiting - File already exists")
+        raise SystemExit()
     else:
-        sg.popup('The filename you chose was ', database_file_path, font=10)
+        gui_message('The filename you chose was %s' % database_file_path)
     window.close()
     return database_file_path
 
@@ -46,10 +46,10 @@ def gui_load_db():
     database_file_path = database_file_path[0]
 
     if not database_file_path:
-        sg.popup("Cancel", "No filename supplied")
-        raise SystemExit("Cancelling: no filename supplied", font=10)
+        gui_message("Cancel - No filename supplied")
+        raise SystemExit()
     else:
-        sg.popup('The filename you chose was ', database_file_path, font=10)
+        gui_message('The filename you chose was %s' % database_file_path)
 
     window.close()
     return database_file_path
@@ -130,7 +130,7 @@ def gui_add_order():
                 try:
                     values['price'] = float(values['price'])
                 except ValueError:
-                    sg.popup("Invalid type entered for price, try again.")
+                    gui_message("Invalid type entered for price, try again.")
                 items_values.append(values)
                 # Update the "output" text element to be the value of "input" element
                 window['item'].update('')
@@ -191,7 +191,7 @@ def gui_update_item(original_order):
                 values['price'] = float(values['price'])
                 break
             except ValueError:
-                sg.popup("Invalid type entered for price, try again.", font=10)
+                gui_message("Invalid type entered for price, try again.")
     window.close()
     return values
 
@@ -236,7 +236,7 @@ def gui_query(unique_distributors, unique_items, unique_grants, unique_sivugs):
                         raise ValueError
         except ValueError:
             success = False
-            sg.popup("Invalid type entered for id, try again.", font=10)
+            gui_message("Invalid type entered for id, try again.")
         # validate price input
         try:
             if values['price_filter'] is not '':
@@ -248,7 +248,7 @@ def gui_query(unique_distributors, unique_items, unique_grants, unique_sivugs):
                     else:
                         raise ValueError
         except ValueError:
-            sg.popup("Invalid type entered for price, try again.", font=10)
+            gui_message("Invalid type entered for price, try again.")
             success = False
         if success:
             break
@@ -278,7 +278,7 @@ def gui_get_order_id():
                 values['item_id'] = None
             break
         except ValueError:
-            sg.popup("Invalid type entered for id, try again.", font=10)
+            gui_message("Invalid type entered for id, try again.")
     window.close()
     return values['order_id'], values['item_id']
 
@@ -316,33 +316,33 @@ def gui_show_query_table(db_path, df):
             window.close()
             return
         elif event in ('Show total'):
-            sg.popup("Total amount: %f" %(df['Price'].sum()), font=10)
+            gui_message("Total amount: %f" %(df['Price'].sum()))
         elif event in ('Update Order'):
             try:
                 row = df.iloc[values['Query Table'][0]]
                 update_order_in_db(db_path, int(row['Order Id']))
             except IndexError:
-                sg.popup("Must select row for update.", font=10)
+                gui_message("Must select row for update.")
         elif event in ('Update Item'):
             try:
                 row = df.iloc[values['Query Table'][0]]
                 update_order_in_db(db_path, int(row['Order Id']), int(row['Id']))
             except IndexError:
-                sg.popup("Must select row for update.", font=10)
+                gui_message("Must select row for update.")
         elif event in ('Open Price Quote'):
             try:
                 row = df.iloc[values['Query Table'][0]]
                 FileName = row['Price Quote File']
                 subprocess.call(['open', FileName])
             except IndexError:
-                sg.popup("Must select row for opening.", font=10)
+                gui_message("Must select row for opening.")
         elif event in ('Open Order File'):
             try:
                 row = df.iloc[values['Query Table'][0]]
                 FileName = row['Order File']
                 subprocess.call(['open', FileName])
             except IndexError:
-                sg.popup("Must select row for opening.", font=10)
+                gui_message("Must select row for opening.")
     window.close()
 
 
@@ -360,7 +360,7 @@ def gui_grants(db_path, grant_info_df):
                 row = grant_info_df.iloc[values['Grant Info Table'][0]]
                 show_sivugim(db_path=db_path, grant_info=row)
             except IndexError:
-                sg.popup("Must select row to show sivugim.", font=10)
+                gui_message("Must select row to show sivugim.")
 
 
 def gui_sivugim(db_path, grant_info, sivug_info_df, all_grants=False):
@@ -382,13 +382,13 @@ def gui_sivugim(db_path, grant_info, sivug_info_df, all_grants=False):
                 window.close()
                 show_sivugim(db_path=db_path, grant_info=grant_info, all_grants=False)
             except IndexError:
-                sg.popup("Must select row to show sivugim.", font=10)
+                gui_message("Must select row to show sivugim.")
         elif event in ('All Grants'):
             try:
                 window.close()
                 show_sivugim(db_path=db_path, grant_info=grant_info, all_grants=True)
             except IndexError:
-                sg.popup("Must select row to show sivugim.", font=10)
+                gui_message("Must select row to show sivugim.")
 
 
 def gui_sivug_summary(db_path, sivug_info_df):
