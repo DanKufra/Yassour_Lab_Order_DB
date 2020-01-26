@@ -85,6 +85,10 @@ def update_order(db_path, order_id, item_id=None, distributor=None, price=None, 
         update_sql = "UPDATE orders SET description = ? WHERE ((order_id = ?) AND (id = ?))"
         cur.execute(update_sql, (description, order_id, item_id))
         con.commit()
+    if sivug_number is not None and item_id is not None:
+        update_sql = "UPDATE orders SET sivug_number = ? WHERE ((order_id = ?) AND (id = ?))"
+        cur.execute(update_sql, (sivug_number, order_id, item_id))
+        con.commit()
     if order_date is not None:
         update_sql = "UPDATE orders SET order_date = ? WHERE order_id = ?"
         cur.execute(update_sql, (order_date, order_id))
@@ -96,10 +100,6 @@ def update_order(db_path, order_id, item_id=None, distributor=None, price=None, 
     if grant_number is not None:
         update_sql = "UPDATE orders SET grant_number = ? WHERE order_id = ?"
         cur.execute(update_sql, (grant_number, order_id))
-        con.commit()
-    if sivug_number is not None:
-        update_sql = "UPDATE orders SET sivug_number = ? WHERE order_id = ?"
-        cur.execute(update_sql, (sivug_number, order_id))
         con.commit()
     if distributor is not None:
         update_sql = "UPDATE orders SET distributor = ? WHERE order_id = ?"
