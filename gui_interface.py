@@ -206,7 +206,7 @@ def gui_update_item(original_order):
     return values
 
 
-def gui_query(unique_distributors, unique_items, unique_grants, unique_sivugs):
+def gui_query(unique_distributors, unique_SAP, unique_items, unique_grants, unique_sivugs):
     # All the stuff inside your window.
     cur_date = datetime.datetime.now()
     cur_date = '%s-%s-%s' % (cur_date.year, cur_date.month, cur_date.day)
@@ -214,7 +214,7 @@ def gui_query(unique_distributors, unique_items, unique_grants, unique_sivugs):
     layout = [[sg.Text('Please enter your query:')],
               [sg.Text('id: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='id_filter'), sg.InputText(key='id_start'), sg.InputText(key='id_end')],
               [sg.Text('Distributor: '), sg.Combo(unique_distributors, key='distributor')],
-              [sg.Text('SAP number: '), sg.Combo(unique_grants, key='SAP_number')],
+              [sg.Text('SAP number: '), sg.Combo(unique_SAP, key='SAP_number')],
               [sg.Text('Grant number: '), sg.Combo(unique_grants, key='grant_number')],
               [sg.Text('Sivug number: '), sg.Combo(unique_sivugs, key='sivug_number')],
               [sg.Text('Price: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='price_filter'), sg.InputText(key='price_start'), sg.InputText(key='price_end')],
