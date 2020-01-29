@@ -10,7 +10,7 @@ DEFAULT_PATH = os.path.join(os.path.dirname('/cs/usr/dan_kufra/Avital_DB/'), 'da
 COLUMN_INDEX = {'id' : 0, 'order_id': 1, 'distributor': 2,
                 'price': 3, 'order_date': 4, 'item': 5,
                 'description': 6, 'SAP_number': 7, 'grant_number': 8,
-                'sivug_number': 9, 'order_file': 10, 'price_quote_file': 11, 'date_added': 12}
+                'sivug_number': 9, 'order_file': 10, 'price_quote_file': 11, 'date_added': 12, 'amount': 13}
 order_sql = """
 CREATE TABLE orders (
      id integer NOT NULL,
@@ -19,6 +19,7 @@ CREATE TABLE orders (
      price real NOT NULL,
      order_date timestamp NOT NULL,
      item text NOT NULL,
+     amount real NOT NULL,
      description text NOT NULL,
      SAP_number integer,
      grant_number text,
@@ -44,11 +45,11 @@ def db_connect(db_path=DEFAULT_PATH):
     return con
 
 
-def create_order(db_path, order_id, item_id, distributor, price, order_date, item, description,
+def create_order(db_path, order_id, item_id, distributor, price, order_date, item, amount, description,
                  SAP_number=None, grant_number=None, sivug_number=None, order_file=None, price_quote_file=None):
     con = db_connect(db_path)
     cur = con.cursor()
-    columns_to_add = 'id, order_id, distributor, price, order_date, item, description, date_added'
+    columns_to_add = 'id, order_id, distributor, price, order_date, item, amount, description, date_added'
     if SAP_number is not None:
         columns_to_add += ', SAP_number'
     if grant_number is not None:
@@ -63,13 +64,13 @@ def create_order(db_path, order_id, item_id, distributor, price, order_date, ite
     for i in range(len(columns_to_add.split(',')) - 1):
         values_to_add += ',?'
     order_insert_sql = "INSERT INTO orders (%s) VALUES (%s)" % (columns_to_add, values_to_add)
-    cur.execute(order_insert_sql, (item_id, order_id, distributor, price, order_date, item, description, datetime.datetime.now(), SAP_number, grant_number, sivug_number, order_file, price_quote_file))
+    cur.execute(order_insert_sql, (item_id, order_id, distributor, price, order_date, item, amount, description, datetime.datetime.now(), SAP_number, grant_number, sivug_number, order_file, price_quote_file))
     con.commit()
     con.close()
     return cur.lastrowid
 
 
-def update_order(db_path, order_id, item_id=None, distributor=None, price=None, order_date=None, item=None, description=None,
+def update_order(db_path, order_id, item_id=None, distributor=None, price=None, order_date=None, item=None, amount=None, description=None,
                  SAP_number=None, grant_number=None, sivug_number=None, order_file=None, price_quote_file=None):
     con = db_connect(db_path)
     cur = con.cursor()
@@ -80,6 +81,10 @@ def update_order(db_path, order_id, item_id=None, distributor=None, price=None, 
     if item is not None and item_id is not None:
         update_sql = "UPDATE orders SET item = ? WHERE ((order_id) = ? AND (id = ?))"
         cur.execute(update_sql, (item, order_id, item_id))
+        con.commit()
+    if amount is not None and item_id is not None:
+        update_sql = "UPDATE orders SET amount = ? WHERE ((order_id) = ? AND (id = ?))"
+        cur.execute(update_sql, (amount, order_id, item_id))
         con.commit()
     if description is not None and item_id is not None:
         update_sql = "UPDATE orders SET description = ? WHERE ((order_id = ?) AND (id = ?))"

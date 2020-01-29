@@ -5,7 +5,7 @@ import locale
 import subprocess
 from gui_interface import gui_create_db, gui_load_db, gui_option_window, \
     gui_add_order, gui_update_order, gui_update_item, gui_message, \
-    gui_get_order_id, gui_query, gui_show_query_table, gui_grants, gui_sivugim, gui_sivug_summary
+    gui_get_order_id, gui_query, gui_show_query_table, gui_grants, gui_sivugim, gui_sivug_summary, gui_double_check_window
 from db_utils import db_connect, init_db, create_order, update_order, get_order_by_id, delete_order_by_id, get_next_order_id, \
     query_db_utils, ACTION_ENUM, COLUMN_INDEX
 from grant_consts import GRANT_DICTS
@@ -35,7 +35,7 @@ def add_order_to_db(db_path):
         id = create_order(db_path=db_path, item_id=i+1, order_id=order_id, distributor=order_values['distributor'],
                           order_date=order_values['date_picked'], grant_number=order_values['grant_number'],
                           SAP_number=order_values['SAP_number'], order_file=order_values['order_file'], price_quote_file=order_values['price_quote_file'],
-                          price=item['price'], item=item['item'], sivug_number=item['sivug_number'], description=item['description'])
+                          price=item['price'], item=item['item'], amount=item['amount'], sivug_number=item['sivug_number'], description=item['description'])
     # TODO how to catch failure?
     gui_message('Order added to DB.')
 
@@ -55,7 +55,7 @@ def update_order_in_db(db_path, order_id=None, item_id=None):
 
     # if item_id is None then update just the order values, otherwise update the item
     if item_id is None:
-        order = gui_update_order(original_order[0])
+        order, items_values = gui_update_order(original_order[0])
     else:
         order = gui_update_item(original_order[0])
     if order is None:
@@ -66,14 +66,23 @@ def update_order_in_db(db_path, order_id=None, item_id=None):
         id = update_order(db_path=db_path, order_id=order_id, distributor=order['distributor'], SAP_number=order['SAP_number'],
                           grant_number=order['grant_number'], order_date=order['date_picked'],
                           order_file=order['order_file'], price_quote_file=order['price_quote_file'])
+        for i, item in enumerate(items_values):
+            id = create_order(db_path=db_path, item_id=i + 1, order_id=order_id,
+                              distributor=order['distributor'],
+                              order_date=order['date_picked'], grant_number=order['grant_number'],
+                              SAP_number=order['SAP_number'], order_file=order['order_file'],
+                              price_quote_file=order['price_quote_file'],
+                              price=item['price'], item=item['item'], amount=item['amount'],
+                              sivug_number=item['sivug_number'], description=item['description'])
     else:
-        id = update_order(db_path=db_path, order_id=order_id, item_id=item_id, item=order['item'],
+        id = update_order(db_path=db_path, order_id=order_id, item_id=item_id, item=order['item'], amount=order['amount'],
                           price=order['price'], description=order['description'], sivug_number=order['sivug_number'])
     gui_message('Order updated in DB.')
 
 
-def delete_order_in_db(db_path):
-    order_id, item_id = gui_get_order_id()
+def delete_order_in_db(db_path, order_id=None, item_id=None):
+    if order_id is None and item_id is None:
+        order_id, item_id = gui_get_order_id()
     if order_id is None:
         gui_message('Order not deleted properly.')
         return
@@ -81,9 +90,16 @@ def delete_order_in_db(db_path):
     if len(items) == 0:
         gui_message('Order id does not exist.')
         return
-    id = delete_order_by_id(db_path=db_path, order_id=order_id, item_id=item_id)
-    # TODO how to catch failure?
-    gui_message('Order deleted from DB.')
+    else:
+        df = pd.DataFrame(items, columns=['Id', 'Order Id', 'Distributor', 'Price', 'Order Date', 'Item', 'Description',
+                                          'SAP Number', 'Grant Number', 'Sivug Number', 'Order File',
+                                          'Price Quote File', 'Date Added', 'Amount'])
+        double_check_event, double_check_values = gui_double_check_window("Are you sure you want to Delete this item?", df)
+        if double_check_event in (None, 'No'):
+            gui_message("Item not deleted")
+        elif double_check_event in ('Yes'):
+            id = delete_order_by_id(db_path=db_path, order_id=order_id, item_id=item_id)
+            gui_message('Order deleted from DB.')
 
 
 def create_query(values):
@@ -106,6 +122,16 @@ def create_query(values):
             query += '(price >= %f and price <= %f )' % (values['price_start'], values['price_end'])
         else:
             query += '(price %s %f)' % (values['price_filter'], values['price_start'])
+        num_conds += 1
+    if values['amount_filter'] != '':
+        if num_conds == 0:
+            query += ' WHERE '
+        if num_conds > 0:
+            query += ' AND '
+        if values['price_filter'] == 'RANGE':
+            query += '(amount >= %f and amount <= %f )' % (values['amount_start'], values['amount_end'])
+        else:
+            query += '(amount %s %f)' % (values['amount_filter'], values['amount_start'])
         num_conds += 1
     if values['distributor'] != '':
         if num_conds == 0:
@@ -167,11 +193,16 @@ def query_db(db_path):
         gui_message('Query cancelled.')
         return
     query_sql = create_query(query_values)
-    items = query_db_utils(db_path, query_sql)
-
-    df = pd.DataFrame(items, columns=['Id', 'Order Id', 'Distributor', 'Price', 'Order Date', 'Item', 'Description',
-                                      'SAP Number', 'Grant Number', 'Sivug Number', 'Order File', 'Price Quote File', 'Date Added'])
-    gui_show_query_table(db_path, df)
+    again = True
+    while again:
+        items = query_db_utils(db_path, query_sql)
+        if len(items) == 0:
+            gui_message("No such items exist in DB. Try again!")
+            return
+        df = pd.DataFrame(items, columns=['Id', 'Order Id', 'Distributor', 'Price', 'Order Date', 'Item', 'Description',
+                                          'SAP Number', 'Grant Number', 'Sivug Number', 'Order File',
+                                          'Price Quote File', 'Date Added', 'Amount'])
+        again = gui_show_query_table(db_path, df)
 
 
 def show_grant_totals(db_path):
@@ -184,11 +215,13 @@ def show_grant_totals(db_path):
         cur_grant = GRANT_DICTS[grant]
         # get total money for that grant
         grant_total = np.sum([cur_grant[sivug]['Amount'] for sivug in cur_grant])
-        grant_spent_sql = "SELECT price FROM orders WHERE grant_number = %s" %grant
+        grant_spent_sql = "SELECT price, amount FROM orders WHERE grant_number = %s" %grant
         cur.execute(grant_spent_sql)
         grant_item_prices = cur.fetchall()
         if len(grant_item_prices) > 0:
-            grant_spent = np.sum(grant_item_prices)
+            grant_spent = 0
+            for item in grant_item_prices:
+                grant_spent += item[0] * item[1]
         else:
             grant_spent = 0
         grant_remaining = grant_total - grant_spent
@@ -213,13 +246,15 @@ def show_sivugim(db_path, grant_info, all_grants=False):
     for sivug in cur_grant.keys():
         cur_sivug = cur_grant[sivug]
         sivug_total = cur_sivug['Amount']
-        sivug_spent_sql = "SELECT price FROM orders WHERE sivug_number = %s" % sivug
+        sivug_spent_sql = "SELECT price, amount FROM orders WHERE sivug_number = %s" % sivug
         if not all_grants:
             sivug_spent_sql += " AND grant_number = %s" % grant_info['Grant Number']
         cur.execute(sivug_spent_sql)
         sivug_item_prices = cur.fetchall()
         if len(sivug_item_prices) > 0:
-            sivug_spent = np.sum(sivug_item_prices)
+            sivug_spent = 0
+            for item in sivug_item_prices:
+                sivug_spent += item[0] * item[1]
         else:
             sivug_spent = 0
         sivug_remaining = sivug_total - sivug_spent
@@ -254,11 +289,14 @@ def show_grant_and_sivugim(db_path):
                 shared_dict[cur_sivug['Shared']] = {'Total': 0, 'Spent': 0}
             shared_dict[cur_sivug['Shared']]['Total'] += cur_sivug['Amount']
 
-        shared_spent_sql = "SELECT sivug_number, price FROM orders WHERE grant_number = %s" % grant
+        shared_spent_sql = "SELECT sivug_number, price, amount FROM orders WHERE grant_number = %s" % grant
         cur.execute(shared_spent_sql)
         sivug_item_prices = cur.fetchall()
         for item in sivug_item_prices:
-            shared_dict[cur_grant[str(item[0])]['Shared']]['Spent'] += item[1]
+            try:
+                shared_dict[cur_grant[str(item[0])]['Shared']]['Spent'] += item[1] * item[2]
+            except KeyError:
+                print("Check your Sivugim! One of them does not exist.")
 
         for k, v in shared_dict.items():
             shared_dict[k]['Remaining'] = v['Total'] - v['Spent']
@@ -269,11 +307,13 @@ def show_grant_and_sivugim(db_path):
         for sivug in cur_grant.keys():
             cur_sivug = cur_grant[sivug]
             sivug_total = cur_sivug['Amount']
-            sivug_spent_sql = "SELECT price FROM orders WHERE sivug_number = %s AND grant_number = %s" % (sivug, grant)
+            sivug_spent_sql = "SELECT price, amount FROM orders WHERE sivug_number = %s AND grant_number = %s" % (sivug, grant)
             cur.execute(sivug_spent_sql)
             sivug_item_prices = cur.fetchall()
             if len(sivug_item_prices) > 0:
-                sivug_spent = np.sum(sivug_item_prices)
+                sivug_spent = 0
+                for item in sivug_item_prices:
+                    sivug_spent == item[0] * item[1]
             else:
                 sivug_spent = 0
             sivug_remaining = sivug_total - sivug_spent

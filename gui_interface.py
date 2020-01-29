@@ -112,33 +112,40 @@ def gui_add_order():
             break
     window.close()
     if get_item:
-        # add items to order
-        layout = [[sg.Text('Please enter your item:')],
-                  [sg.Text('Item: '), sg.InputText(key='item')],
-                  [sg.Text('Price: '), sg.InputText(key='price')],
-                  [sg.Text('Sivug: '), sg.InputText(key='sivug_number')],
-                  [sg.Text('Description: '), sg.InputText(key='description')],
-                  [sg.Button('Add'), sg.Exit('Finished')]]
-        # Create the Window
-        window = sg.Window('Add item', layout, font=10)
-        items_values = []
-        while True:  # The Event Loop
-            event, values = window.read()
-            if event in (None, 'Finished'):
-                break
-            if event in ('Add'):
-                try:
-                    values['price'] = float(values['price'])
-                except ValueError:
-                    gui_message("Invalid type entered for price, try again.")
-                items_values.append(values)
-                # Update the "output" text element to be the value of "input" element
-                window['item'].update('')
-                window['price'].update('')
-                window['description'].update('')
-        window.close()
-
+        items_values = add_items_to_order()
     return order_values, items_values
+
+
+def add_items_to_order():
+    # add items to order
+    layout = [[sg.Text('Please enter your item:')],
+              [sg.Text('Item: '), sg.InputText(key='item')],
+              [sg.Text('Price: '), sg.InputText(key='price')],
+              [sg.Text('Sivug: '), sg.InputText(key='sivug_number')],
+              [sg.Text('Amount: '), sg.InputText(key='amount')],
+              [sg.Text('Description: '), sg.InputText(key='description')],
+              [sg.Button('Add'), sg.Exit('Finished')]]
+    # Create the Window
+    window = sg.Window('Add item', layout, font=10)
+    items_values = []
+    while True:  # The Event Loop
+        event, values = window.read()
+        if event in (None, 'Finished'):
+            break
+        if event in ('Add'):
+            try:
+                values['price'] = float(values['price'])
+            except ValueError:
+                gui_message("Invalid type entered for price, try again.")
+            items_values.append(values)
+            # Update the "output" text element to be the value of "input" element
+            window['item'].update('')
+            window['price'].update('')
+            window['sivug_number'].update('')
+            window['amount'].update('')
+            window['description'].update('')
+    window.close()
+    return items_values
 
 
 def gui_message(message):    
@@ -167,7 +174,9 @@ def gui_update_order(original_order):
         if event in 'Ok':
             break
     window.close()
-    return values
+
+    item_values = add_items_to_order()
+    return values, item_values
 
 
 def gui_update_item(original_order):
@@ -175,6 +184,7 @@ def gui_update_item(original_order):
     layout = [[sg.Text('Please update your order:')],
               [sg.Text('Item: '), sg.InputText(original_order[COLUMN_INDEX['item']], key='item')],
               [sg.Text('Price: '), sg.InputText(original_order[COLUMN_INDEX['price']], key='price')],
+              [sg.Text('Amount: '), sg.InputText(original_order[COLUMN_INDEX['amount']], key='amount')],
               [sg.Text('Sivug Number: '), sg.InputText(original_order[COLUMN_INDEX['sivug_number']], key='sivug_number')],
               [sg.Text('Description: '), sg.InputText(original_order[COLUMN_INDEX['description']], key='description')],
               [sg.Button('Ok'), sg.Button('Cancel')]]
@@ -208,6 +218,7 @@ def gui_query(unique_distributors, unique_items, unique_grants, unique_sivugs):
               [sg.Text('Grant number: '), sg.Combo(unique_grants, key='grant_number')],
               [sg.Text('Sivug number: '), sg.Combo(unique_sivugs, key='sivug_number')],
               [sg.Text('Price: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='price_filter'), sg.InputText(key='price_start'), sg.InputText(key='price_end')],
+              [sg.Text('Amount: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='amount_filter'), sg.InputText(key='amount_start'), sg.InputText(key='amount_end')],
               [sg.CalendarButton('Start Order Date', key='start_date', disabled=False, focus=True, target='start_date_picked', format='%Y-%m-%d'),
                sg.InputText(cur_date, key='start_date_picked'),
                sg.CalendarButton('End Order Date', key='end_date', disabled=False, focus=True, target='end_date_picked', format='%Y-%m-%d'),
@@ -249,6 +260,19 @@ def gui_query(unique_distributors, unique_items, unique_grants, unique_sivugs):
                         raise ValueError
         except ValueError:
             gui_message("Invalid type entered for price, try again.")
+            success = False
+        # validate price input
+        try:
+            if values['amount_filter'] is not '':
+                if values['amount_start'] is not '':
+                    values['amount_start'] = float(values['amount_start'])
+                if values['amount_filter'] == 'RANGE':
+                    if values['amount_end'] is not '':
+                        values['amount_end'] = float(values['amount_end'])
+                    else:
+                        raise ValueError
+        except ValueError:
+            gui_message("Invalid type entered for amount, try again.")
             success = False
         if success:
             break
@@ -305,45 +329,69 @@ def setup_table(df, name, buttons):
     return window
 
 
+def gui_double_check_window(message, df=None):
+    if df is None:
+        layout = [[sg.Text(message)],
+                  [sg.Button('Yes'), sg.Button('No')]]
+        double_check_window = sg.Window('DoubleCheckWindow', layout, font=10)
+
+    else:
+        double_check_window = setup_table(df, "Are you sure you want to delete these items?", ["Yes", "No"])
+
+    event, values = double_check_window.read()
+    double_check_window.close()
+    return event, values
+
+
 def gui_show_query_table(db_path, df):
     table_key = 'Query Table'
-    window = setup_table(df, table_key, ["Show Total", "Update Order", "Update Item",
+    window = setup_table(df, table_key, ["Show Total", "Update Order", "Update Item", "Delete Item",
                                          "Open Price Quote", "Open Order File", "Exit"])
-    from run import update_order_in_db
-    while True:
-        event, values = window.read()
-        if event in (None, 'Exit'):
-            window.close()
-            return
-        elif event in ('Show total'):
-            gui_message("Total amount: %f" %(df['Price'].sum()))
-        elif event in ('Update Order'):
-            try:
-                row = df.iloc[values['Query Table'][0]]
-                update_order_in_db(db_path, int(row['Order Id']))
-            except IndexError:
-                gui_message("Must select row for update.")
-        elif event in ('Update Item'):
-            try:
-                row = df.iloc[values['Query Table'][0]]
-                update_order_in_db(db_path, int(row['Order Id']), int(row['Id']))
-            except IndexError:
-                gui_message("Must select row for update.")
-        elif event in ('Open Price Quote'):
-            try:
-                row = df.iloc[values['Query Table'][0]]
-                FileName = row['Price Quote File']
-                subprocess.call(['open', FileName])
-            except IndexError:
-                gui_message("Must select row for opening.")
-        elif event in ('Open Order File'):
-            try:
-                row = df.iloc[values['Query Table'][0]]
-                FileName = row['Order File']
-                subprocess.call(['open', FileName])
-            except IndexError:
-                gui_message("Must select row for opening.")
+    from run import update_order_in_db, delete_order_in_db
+    event, values = window.read()
+    if event in (None, 'Exit'):
+        window.close()
+        return False
+    elif event in ('Show total'):
+        gui_message("Total cost: %f" %(df['Price'].sum()))
+    elif event in ('Update Order'):
+        try:
+            row = df.iloc[values['Query Table'][0]]
+            update_order_in_db(db_path, int(row['Order Id']))
+        except IndexError:
+            gui_message("Must select row for update.")
+    elif event in ('Update Item'):
+        try:
+            row = df.iloc[values['Query Table'][0]]
+            update_order_in_db(db_path, int(row['Order Id']), int(row['Id']))
+        except IndexError:
+            gui_message("Must select row for update.")
+    elif event in ('Delete Item'):
+        try:
+            row = df.iloc[values['Query Table'][0]]
+            double_check_event, double_check_values = gui_double_check_window("Are you sure you want to Delete this item?")
+            if double_check_event in (None, 'No'):
+                gui_message("Item not deleted")
+            elif double_check_event in ('Yes'):
+                delete_order_in_db(db_path, int(row['Order Id']), int(row['Id']))
+        except IndexError:
+            gui_message("Must select row for deletion.")
+    elif event in ('Open Price Quote'):
+        try:
+            row = df.iloc[values['Query Table'][0]]
+            FileName = row['Price Quote File']
+            subprocess.call(['open', FileName])
+        except IndexError:
+            gui_message("Must select row for opening.")
+    elif event in ('Open Order File'):
+        try:
+            row = df.iloc[values['Query Table'][0]]
+            FileName = row['Order File']
+            subprocess.call(['open', FileName])
+        except IndexError:
+            gui_message("Must select row for opening.")
     window.close()
+    return True
 
 
 def gui_grants(db_path, grant_info_df):
