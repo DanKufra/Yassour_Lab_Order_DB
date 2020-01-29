@@ -2,7 +2,6 @@ import argparse as argparse
 import numpy as np
 import pandas as pd
 import locale
-import subprocess
 from gui_interface import gui_create_db, gui_load_db, gui_option_window, \
     gui_add_order, gui_update_order, gui_update_item, gui_message, \
     gui_get_order_id, gui_query, gui_show_query_table, gui_grants, gui_sivugim, gui_sivug_summary, gui_double_check_window
