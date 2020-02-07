@@ -24,7 +24,11 @@ def load_db():
 
 
 def add_order_to_db(db_path):
-    order_values, items_values = gui_add_order()
+    unique_distributors = get_unique(db_path, 'distributor')
+    unique_grants = get_unique(db_path, 'grant_number')
+    unique_sivugs = get_unique(db_path, 'sivug_number')
+
+    order_values, items_values = gui_add_order(unique_distributors, unique_grants, unique_sivugs)
     print(order_values, items_values)
     if order_values is None or items_values is None:
         gui_message('Order not added properly.')
@@ -171,25 +175,22 @@ def create_query(values):
     return query
 
 
-def query_db(db_path):
+def get_unique(db_path, field):
     con = db_connect(db_path)
     cur = con.cursor()
-    unique_distributors_sql = "SELECT distinct(distributor) FROM orders ORDER BY distributor ASC"
-    unique_saps_sql = "SELECT distinct(SAP_number) FROM orders ORDER BY distributor ASC"
-    unique_items_sql = "SELECT distinct(item) FROM orders ORDER BY item ASC"
-    unique_grant_sql = "SELECT distinct(grant_number) FROM orders ORDER BY grant_number ASC"
-    unique_sivug_sql = "SELECT distinct(sivug_number) FROM orders ORDER BY sivug_number ASC"
-    cur.execute(unique_distributors_sql)
-    unique_distributors = cur.fetchall()
-    cur.execute(unique_saps_sql)
-    unique_SAP = cur.fetchall()
-    cur.execute(unique_items_sql)
-    unique_items = cur.fetchall()
-    cur.execute(unique_grant_sql)
-    unique_grants = cur.fetchall()
-    cur.execute(unique_sivug_sql)
-    unique_sivugs = cur.fetchall()
-    con.close()
+    unique_sql = "SELECT distinct(%s) FROM orders ORDER BY %s ASC" % (field, field)
+    cur.execute(unique_sql)
+    unique = cur.fetchall()
+    return unique
+
+
+def query_db(db_path):
+    unique_distributors = get_unique(db_path, 'distributor')
+    unique_SAP = get_unique(db_path, 'SAP_number')
+    unique_items = get_unique(db_path, 'item')
+    unique_grants = get_unique(db_path, 'grant_number')
+    unique_sivugs = get_unique(db_path, 'sivug_number')
+
     query_values = gui_query(unique_distributors, unique_SAP, unique_items, unique_grants, unique_sivugs)
     if query_values is None:
         gui_message('Query cancelled.')

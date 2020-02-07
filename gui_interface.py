@@ -83,7 +83,7 @@ def gui_option_window():
         return ACTION_ENUM['GRANTS_SIVUG']
 
 
-def gui_add_order():
+def gui_add_order(unique_distributors, unique_grants, unique_sivugs):
     get_item = True
     order_values = None
     items_values = None
@@ -91,11 +91,11 @@ def gui_add_order():
     cur_date = '%s-%s-%s' % (cur_date.year, cur_date.month, cur_date.day)
     # create order
     layout = [[sg.Text('Please enter your order:')],
-              [sg.Text('Distributor: '), sg.InputText(key='distributor')],
+              [sg.Text('Distributor: '), sg.Combo(unique_distributors, key='distributor')],
               [sg.CalendarButton('Order Date', key='date', disabled=False, focus=True,
                                  target='date_picked', format='%Y-%m-%d'), sg.InputText(cur_date, key='date_picked')],
               [sg.Text('SAP number: '), sg.InputText(key='SAP_number')],
-              [sg.Text('Grant: '), sg.InputText(key='grant_number')],
+              [sg.Text('Grant: '), sg.Combo(unique_grants, key='grant_number')],
               [sg.Text('Order File: '), sg.In(key='order_file'), sg.FileBrowse()],
               [sg.Text('Price Quote File: '), sg.In(key='price_quote_file'), sg.FileBrowse()],
               [sg.Button('Ok'), sg.Button('Cancel')]]
@@ -112,16 +112,16 @@ def gui_add_order():
             break
     window.close()
     if get_item:
-        items_values = add_items_to_order()
+        items_values = add_items_to_order(unique_sivugs)
     return order_values, items_values
 
 
-def add_items_to_order():
+def add_items_to_order(unique_sivug):
     # add items to order
     layout = [[sg.Text('Please enter your item:')],
               [sg.Text('Item: '), sg.InputText(key='item')],
               [sg.Text('Price: '), sg.InputText(key='price')],
-              [sg.Text('Sivug: '), sg.InputText(key='sivug_number')],
+              [sg.Text('Sivug: '), sg.Combo(unique_sivug, key='sivug_number')],
               [sg.Text('Amount: '), sg.InputText(key='amount')],
               [sg.Text('Description: '), sg.InputText(key='description')],
               [sg.Button('Add'), sg.Exit('Finished')]]
@@ -152,12 +152,12 @@ def gui_message(message):
     sg.popup(message, font=10)
 
 
-def gui_update_order(original_order):
+def gui_update_order(original_order, unique_distributors, unique_grants, unique_sivugs):
     # All the stuff inside your window.
     layout = [[sg.Text('Please update your order:')],
-              [sg.Text('Distributor: '), sg.InputText(original_order[COLUMN_INDEX['distributor']], key='distributor')],
+              [sg.Text('Distributor: '), sg.Combo(unique_distributors, default_value=original_order[COLUMN_INDEX['distributor']], key='distributor')],
               [sg.Text('SAP Number: '), sg.InputText(original_order[COLUMN_INDEX['SAP_number']], key='SAP_number')],
-              [sg.Text('Grant Number: '), sg.InputText(original_order[COLUMN_INDEX['grant_number']], key='grant_number')],
+              [sg.Text('Grant Number: '), sg.Combo(unique_grants, default_value=original_order[COLUMN_INDEX['grant_number']], key='grant_number')],
               [sg.CalendarButton('Order Date', key='date', disabled=False, focus=True, target='date_picked', format='%Y-%m-%d'),
                sg.InputText(original_order[COLUMN_INDEX['order_date']], key='date_picked')],
               [sg.Text('Order File: '), sg.In(original_order[COLUMN_INDEX['order_file']], key='order_file'), sg.FileBrowse()],
@@ -175,7 +175,7 @@ def gui_update_order(original_order):
             break
     window.close()
 
-    item_values = add_items_to_order()
+    item_values = add_items_to_order(unique_sivugs)
     return values, item_values
 
 
