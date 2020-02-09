@@ -135,15 +135,15 @@ def add_items_to_order(unique_sivug):
         if event in ('Add'):
             try:
                 values['price'] = float(values['price'])
+                items_values.append(values)
+                # Update the "output" text element to be the value of "input" element
+                window['item'].update('')
+                window['price'].update('')
+                window['sivug_number'].update('')
+                window['amount'].update('')
+                window['description'].update('')
             except ValueError:
                 gui_message("Invalid type entered for price, try again.")
-            items_values.append(values)
-            # Update the "output" text element to be the value of "input" element
-            window['item'].update('')
-            window['price'].update('')
-            window['sivug_number'].update('')
-            window['amount'].update('')
-            window['description'].update('')
     window.close()
     return items_values
 
@@ -170,12 +170,13 @@ def gui_update_order(original_order, unique_distributors, unique_grants, unique_
         event, values = window.read()
         if event in (None, 'Cancel'):
             values = None
+            item_values = None
+            window.close()
             break
         if event in 'Ok':
+            window.close()
+            item_values = add_items_to_order(unique_sivugs)
             break
-    window.close()
-
-    item_values = add_items_to_order(unique_sivugs)
     return values, item_values
 
 
