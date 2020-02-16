@@ -109,7 +109,10 @@ def gui_add_order(unique_distributors, unique_grants, unique_sivugs):
             order_values = None
             break
         if event in ('Ok'):
-            break
+            if order_values['distributor'] == '':
+                gui_message("Must enter a distributor")
+            else:
+                break
     window.close()
     if get_item:
         items_values = add_items_to_order(unique_sivugs)
@@ -135,6 +138,10 @@ def add_items_to_order(unique_sivug):
         if event in ('Add'):
             try:
                 values['price'] = float(values['price'])
+                values['amount'] = float(values['amount'])
+                if values['item'] == '':
+                    gui_message("Please insert an item")
+                    continue
                 items_values.append(values)
                 # Update the "output" text element to be the value of "input" element
                 window['item'].update('')
@@ -143,7 +150,7 @@ def add_items_to_order(unique_sivug):
                 window['amount'].update('')
                 window['description'].update('')
             except ValueError:
-                gui_message("Invalid type entered for price, try again.")
+                gui_message("Invalid type entered for price or amount, try again.")
     window.close()
     return items_values
 

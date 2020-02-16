@@ -49,22 +49,33 @@ def create_order(db_path, order_id, item_id, distributor, price, order_date, ite
                  SAP_number=None, grant_number=None, sivug_number=None, order_file=None, price_quote_file=None):
     con = db_connect(db_path)
     cur = con.cursor()
-    columns_to_add = 'id, order_id, distributor, price, order_date, item, amount, description, date_added'
-    if SAP_number is not None:
-        columns_to_add += ', SAP_number'
-    if grant_number is not None:
-        columns_to_add += ', grant_number'
-    if sivug_number is not None:
-        columns_to_add += ', sivug_number'
-    if order_file is not None:
-        columns_to_add += ', order_file'
-    if price_quote_file is not None:
-        columns_to_add += ', price_quote_file'
-    values_to_add = '?'
-    for i in range(len(columns_to_add.split(',')) - 1):
-        values_to_add += ',?'
+    columns_to_add = 'id, order_id, distributor, price, order_date, item, amount, description, date_added, SAP_number, grant_number, sivug_number, order_file, price_quote_file'
+    sivug_number = [''] if sivug_number == '' else sivug_number
+    grant_number = [''] if grant_number == '' else grant_number
+    real_values = [item_id, order_id, distributor[0], price, order_date,
+                   item, amount, description, datetime.datetime.now(),
+                   SAP_number, grant_number[0], sivug_number[0], order_file, price_quote_file]
+    # if SAP_number != '':
+    #     columns_to_add += ', SAP_number'
+    #     real_values.append(SAP_number)
+    # if grant_number != '':
+    #     columns_to_add += ', grant_number'
+    #     real_values.append(grant_number)
+    # if sivug_number != '':
+    #     columns_to_add += ', sivug_number'
+    #     real_values.append(sivug_number)
+    # if order_file != '':
+    #     columns_to_add += ', order_file'
+    #     real_values.append(order_file)
+    # if price_quote_file != '':
+    #     columns_to_add += ', price_quote_file'
+    #     real_values.append(price_quote_file)
+    values_to_add = ''
+    for i in real_values:
+        values_to_add += '?,'
+    values_to_add = values_to_add[:-1]
     order_insert_sql = "INSERT INTO orders (%s) VALUES (%s)" % (columns_to_add, values_to_add)
-    cur.execute(order_insert_sql, (item_id, order_id, distributor, price, order_date, item, amount, description, datetime.datetime.now(), SAP_number, grant_number, sivug_number, order_file, price_quote_file))
+    cur.execute(order_insert_sql, real_values)
     con.commit()
     con.close()
     return cur.lastrowid
@@ -104,11 +115,12 @@ def update_order(db_path, order_id, item_id=None, distributor=None, price=None, 
         con.commit()
     if grant_number is not None:
         update_sql = "UPDATE orders SET grant_number = ? WHERE order_id = ?"
-        cur.execute(update_sql, (grant_number, order_id))
+        grant_number = [''] if grant_number == '' else grant_number
+        cur.execute(update_sql, (grant_number[0], order_id))
         con.commit()
     if distributor is not None:
         update_sql = "UPDATE orders SET distributor = ? WHERE order_id = ?"
-        cur.execute(update_sql, (distributor, order_id))
+        cur.execute(update_sql, (distributor[0], order_id))
         con.commit()
     if order_file is not None:
         update_sql = "UPDATE orders SET order_file = ? WHERE order_id = ?"

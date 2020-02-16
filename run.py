@@ -69,8 +69,8 @@ def update_order_in_db(db_path, order_id=None, item_id=None):
         return
 
     if item_id is None:
-        id = update_order(db_path=db_path, order_id=order_id, distributor=order['distributor'][0], SAP_number=order['SAP_number'],
-                          grant_number=order['grant_number'][0], order_date=order['date_picked'],
+        id = update_order(db_path=db_path, order_id=order_id, distributor=order['distributor'], SAP_number=order['SAP_number'],
+                          grant_number=order['grant_number'], order_date=order['date_picked'],
                           order_file=order['order_file'], price_quote_file=order['price_quote_file'])
         for i, item in enumerate(items_values):
             id = create_order(db_path=db_path, item_id=i + 1, order_id=order_id,
@@ -79,7 +79,7 @@ def update_order_in_db(db_path, order_id=None, item_id=None):
                               SAP_number=order['SAP_number'], order_file=order['order_file'],
                               price_quote_file=order['price_quote_file'],
                               price=item['price'], item=item['item'], amount=item['amount'],
-                              sivug_number=item['sivug_number'][0], description=item['description'])
+                              sivug_number=item['sivug_number'], description=item['description'])
     else:
         id = update_order(db_path=db_path, order_id=order_id, item_id=item_id, item=order['item'], amount=order['amount'],
                           price=order['price'], description=order['description'], sivug_number=order['sivug_number'])
