@@ -227,7 +227,7 @@ def show_grant_totals(db_path):
         if len(grant_item_prices) > 0:
             grant_spent = 0
             for item in grant_item_prices:
-                grant_spent += item[0] * item[1]
+                grant_spent += item[0] * item[1] * 1.17
         else:
             grant_spent = 0
         grant_remaining = grant_total - grant_spent
@@ -260,7 +260,7 @@ def show_sivugim(db_path, grant_info, all_grants=False):
         if len(sivug_item_prices) > 0:
             sivug_spent = 0
             for item in sivug_item_prices:
-                sivug_spent += item[0] * item[1]
+                sivug_spent += item[0] * item[1] * 1.17
         else:
             sivug_spent = 0
         sivug_remaining = sivug_total - sivug_spent
