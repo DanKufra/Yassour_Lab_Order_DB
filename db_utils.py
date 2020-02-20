@@ -50,11 +50,14 @@ def create_order(db_path, order_id, item_id, distributor, price, order_date, ite
     con = db_connect(db_path)
     cur = con.cursor()
     columns_to_add = 'id, order_id, distributor, price, order_date, item, amount, description, date_added, SAP_number, grant_number, sivug_number, order_file, price_quote_file'
-    sivug_number = [''] if sivug_number == '' else sivug_number
-    grant_number = [''] if grant_number == '' else grant_number
-    real_values = [item_id, order_id, distributor[0], price, order_date,
+    distributor = distributor[0] if isinstance(distributor, tuple) else distributor
+    sivug_number = sivug_number[0] if isinstance(sivug_number, tuple) else sivug_number
+    grant_number = grant_number[0] if isinstance(grant_number, tuple) else grant_number
+    sivug_number = '' if sivug_number == '' else sivug_number
+    grant_number = '' if grant_number == '' else grant_number
+    real_values = [item_id, order_id, distributor, price, order_date,
                    item, amount, description, datetime.datetime.now(),
-                   SAP_number, grant_number[0], sivug_number[0], order_file, price_quote_file]
+                   SAP_number, grant_number, sivug_number, order_file, price_quote_file]
     # if SAP_number != '':
     #     columns_to_add += ', SAP_number'
     #     real_values.append(SAP_number)
@@ -103,6 +106,8 @@ def update_order(db_path, order_id, item_id=None, distributor=None, price=None, 
         con.commit()
     if sivug_number is not None and item_id is not None:
         update_sql = "UPDATE orders SET sivug_number = ? WHERE ((order_id = ?) AND (id = ?))"
+        sivug_number = sivug_number[0] if isinstance(sivug_number, tuple) else sivug_number
+        sivug_number = '' if sivug_number == '' else sivug_number
         cur.execute(update_sql, (sivug_number, order_id, item_id))
         con.commit()
     if order_date is not None:
@@ -115,12 +120,14 @@ def update_order(db_path, order_id, item_id=None, distributor=None, price=None, 
         con.commit()
     if grant_number is not None:
         update_sql = "UPDATE orders SET grant_number = ? WHERE order_id = ?"
-        grant_number = [''] if grant_number == '' else grant_number
-        cur.execute(update_sql, (grant_number[0], order_id))
+        grant_number = grant_number[0] if isinstance(grant_number, tuple) else grant_number
+        grant_number = '' if grant_number == '' else grant_number
+        cur.execute(update_sql, (grant_number, order_id))
         con.commit()
     if distributor is not None:
         update_sql = "UPDATE orders SET distributor = ? WHERE order_id = ?"
-        cur.execute(update_sql, (distributor[0], order_id))
+        distributor = distributor[0] if isinstance(distributor, tuple) else distributor
+        cur.execute(update_sql, (distributor, order_id))
         con.commit()
     if order_file is not None:
         update_sql = "UPDATE orders SET order_file = ? WHERE order_id = ?"

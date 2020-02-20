@@ -44,6 +44,8 @@ def add_order_to_db(db_path):
 
 
 def update_order_in_db(db_path, order_id=None, item_id=None):
+    import pdb
+    pdb.set_trace()
     # if order id is None then get it via gui, otherwise we get it as an argument
     if order_id is None:
         order_id, item_id = gui_get_order_id()
