@@ -231,7 +231,7 @@ def show_grant_totals(db_path):
         else:
             grant_spent = 0
         grant_remaining = grant_total - grant_spent
-        percentage_spent = np.round(grant_spent / float(grant_total), decimals=2)
+        percentage_spent = np.round(grant_spent / float(grant_total), decimals=2) * 100.0
         grant_remaining = locale.format_string("%.2f", grant_remaining, grouping=True)
         grant_total = locale.format_string("%.2f", grant_total, grouping=True)
         grant_spent = locale.format_string("%.2f", grant_spent, grouping=True)
@@ -267,7 +267,7 @@ def show_sivugim(db_path, grant_info, all_grants=False):
         if sivug_total == 0.0:
             percentage_spent = 0.0
         else:
-            percentage_spent = np.round(sivug_spent / float(sivug_total), decimals=2)
+            percentage_spent = np.round(sivug_spent / float(sivug_total), decimals=2) * 100.0
         sivug_remaining = locale.format_string("%.2f", sivug_remaining, grouping=True)
         sivug_total = locale.format_string("%.2f", sivug_total, grouping=True)
         sivug_spent = locale.format_string("%.2f", sivug_spent, grouping=True)
@@ -326,7 +326,7 @@ def show_grant_and_sivugim(db_path):
             if sivug_total == 0.0:
                 percentage_spent = 0.0
             else:
-                percentage_spent = np.round(sivug_spent / float(sivug_total), decimals=2)
+                percentage_spent = np.round(sivug_spent / float(sivug_total), decimals=2) * 100.0
             sivug_remaining = locale.format_string("%.2f", sivug_remaining, grouping=True)
             sivug_total = locale.format_string("%.2f", sivug_total, grouping=True)
             sivug_spent = locale.format_string("%.2f", sivug_spent, grouping=True)
