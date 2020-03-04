@@ -28,7 +28,8 @@ GRANT_DICTS = {"3015002026": {"5000105": {"Amount": 6785, "Shared": 1, "Descript
                               "6010001": {"Amount": 0, "Shared": 1, "Description": "Write your description here"},
                               "6010002": {"Amount": 0, "Shared": 1, "Description": "Write your description here"},
                               "6013003": {"Amount": 0, "Shared": 1, "Description": "Write your description here"},
-                              "5300003": {"Amount": 441132, "Shared": 1, "Description": "Write your description here"}
+                              "5300003": {"Amount": 441132, "Shared": 1, "Description": "Write your description here"},
+                              "6006000": {"Amount": 0, "Shared": 2, "Description": "Advertisement materials"}
                              },
                "3186000162": {"5000206": {"Amount": 4302, "Shared": 2, "Description": "Write your description here"},
                               "6001000": {"Amount": 0, "Shared": 2, "Description": "Write your description here"},

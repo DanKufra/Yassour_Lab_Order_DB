@@ -216,8 +216,6 @@ def gui_update_item(original_order):
 
 def gui_query(unique_distributors, unique_SAP, unique_items, unique_grants, unique_sivugs):
     # All the stuff inside your window.
-    cur_date = datetime.datetime.now()
-    cur_date = '%s-%s-%s' % (cur_date.year, cur_date.month, cur_date.day)
     #TODO fix calender for mac?
     layout = [[sg.Text('Please enter your query:')],
               [sg.Text('id: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='id_filter'), sg.InputText(key='id_start'), sg.InputText(key='id_end')],
@@ -228,9 +226,9 @@ def gui_query(unique_distributors, unique_SAP, unique_items, unique_grants, uniq
               [sg.Text('Price: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='price_filter'), sg.InputText(key='price_start'), sg.InputText(key='price_end')],
               [sg.Text('Amount: '), sg.Combo(['<', '=', '>', '<=', '>=', 'RANGE'], key='amount_filter'), sg.InputText(key='amount_start'), sg.InputText(key='amount_end')],
               [sg.CalendarButton('Start Order Date', key='start_date', disabled=False, focus=True, target='start_date_picked', format='%Y-%m-%d'),
-               sg.InputText(cur_date, key='start_date_picked'),
+               sg.InputText(key='start_date_picked'),
                sg.CalendarButton('End Order Date', key='end_date', disabled=False, focus=True, target='end_date_picked', format='%Y-%m-%d'),
-               sg.InputText(cur_date, key='end_date_picked')],
+               sg.InputText(key='end_date_picked')],
               [sg.Text('Item: '), sg.Combo(unique_items, key='item')],
               [sg.Button('Ok'), sg.Button('Cancel')]]
     # Create the Window

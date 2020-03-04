@@ -129,6 +129,21 @@ def create_query(values):
         else:
             query += '(price %s %f)' % (values['price_filter'], values['price_start'])
         num_conds += 1
+    #TODO fix this
+    # if values['start_date_picked'] != '':
+    #     if num_conds == 0:
+    #         query += ' WHERE '
+    #     if num_conds > 0:
+    #         query += ' AND '
+    #     query += '(date_added >= %s)' % (values['start_date_picked'])
+    #     num_conds += 1
+    # if values['end_date_picked'] != '':
+    #     if num_conds == 0:
+    #         query += ' WHERE '
+    #     if num_conds > 0:
+    #         query += ' AND '
+    #     query += '(order_date <= %s)' % (values['end_date_picked'])
+    #     num_conds += 1
     if values['amount_filter'] != '':
         if num_conds == 0:
             query += ' WHERE '
@@ -174,7 +189,8 @@ def create_query(values):
             query += ' AND '
         query += '(sivug_number = "%s" ) ' % values['sivug_number']
         num_conds += 1
-    # print(query)
+
+    print(query)
     return query
 
 
@@ -291,6 +307,8 @@ def show_grant_and_sivugim(db_path):
         shared_dict = {}
         for sivug in cur_grant.keys():
             cur_sivug = cur_grant[sivug]
+            if cur_sivug['Shared'] is None:
+                continue
             if cur_sivug['Shared'] not in shared_dict.keys():
                 shared_dict[cur_sivug['Shared']] = {'Total': 0, 'Spent': 0}
             shared_dict[cur_sivug['Shared']]['Total'] += cur_sivug['Amount']
@@ -302,7 +320,7 @@ def show_grant_and_sivugim(db_path):
             try:
                 shared_dict[cur_grant[str(item[0])]['Shared']]['Spent'] += item[1] * item[2]
             except KeyError:
-                print("Check your Sivugim! One of them does not exist.")
+                print("Check your Sivugim! Sivug number %s of them does not exist." % str(item[0]))
 
         for k, v in shared_dict.items():
             shared_dict[k]['Remaining'] = v['Total'] - v['Spent']
@@ -319,7 +337,7 @@ def show_grant_and_sivugim(db_path):
             if len(sivug_item_prices) > 0:
                 sivug_spent = 0
                 for item in sivug_item_prices:
-                    sivug_spent == item[0] * item[1]
+                    sivug_spent = item[0] * item[1]
             else:
                 sivug_spent = 0
             sivug_remaining = sivug_total - sivug_spent
@@ -330,12 +348,22 @@ def show_grant_and_sivugim(db_path):
             sivug_remaining = locale.format_string("%.2f", sivug_remaining, grouping=True)
             sivug_total = locale.format_string("%.2f", sivug_total, grouping=True)
             sivug_spent = locale.format_string("%.2f", sivug_spent, grouping=True)
+
+            if cur_sivug['Shared'] is not None:
+                sivug_shared_total = shared_dict[cur_sivug['Shared']]['Total']
+                sivug_shared_spent = shared_dict[cur_sivug['Shared']]['Spent']
+                sivug_shared_remaining = shared_dict[cur_sivug['Shared']]['Remaining']
+            else:
+                sivug_shared_total = sivug_total
+                sivug_shared_spent = sivug_spent
+                sivug_shared_remaining = sivug_remaining
+
             cur_sivug_info = {"Grant Number": grant, "Sivug Number": sivug, "Sivug Total": sivug_total,
                               "Sivug Spent": sivug_spent, "Sivug Remaining": sivug_remaining,
                               "Percentage Spent": percentage_spent, "Shared Index": str(cur_sivug['Shared']),
-                              "Amount Shared Total": shared_dict[cur_sivug['Shared']]['Total'],
-                              "Amount Shared Spent": shared_dict[cur_sivug['Shared']]['Spent'],
-                              "Amount Shared Remaining": shared_dict[cur_sivug['Shared']]['Remaining']}
+                              "Amount Shared Total": sivug_shared_total,
+                              "Amount Shared Spent": sivug_shared_spent,
+                              "Amount Shared Remaining": sivug_shared_remaining}
             sivug_info_df = sivug_info_df.append(cur_sivug_info, ignore_index=True)
     gui_sivug_summary(db_path, sivug_info_df)
 
