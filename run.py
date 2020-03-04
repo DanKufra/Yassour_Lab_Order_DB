@@ -11,6 +11,7 @@ from grant_consts import GRANT_DICTS
 
 locale.setlocale(locale.LC_ALL, 'en_US')
 
+TAX_CONST = 1.17
 
 def create_new_db():
     db_path = gui_create_db()
@@ -234,6 +235,10 @@ def show_grant_totals(db_path):
                                           'Grant Spent', 'Grant Remaining',
                                           'Percentage Spent'])
     for grant in GRANT_DICTS.keys():
+        if grant in ["3015002026", "3186000162"]:
+            currency_const = 3.5
+        else:
+            currency_const = 1.0
         cur_grant = GRANT_DICTS[grant]
         # get total money for that grant
         grant_total = np.sum([cur_grant[sivug]['Amount'] for sivug in cur_grant])
@@ -243,7 +248,7 @@ def show_grant_totals(db_path):
         if len(grant_item_prices) > 0:
             grant_spent = 0
             for item in grant_item_prices:
-                grant_spent += item[0] * item[1] * 1.17
+                grant_spent += item[0] * item[1] * TAX_CONST / currency_const
         else:
             grant_spent = 0
         grant_remaining = grant_total - grant_spent
@@ -266,6 +271,10 @@ def show_sivugim(db_path, grant_info, all_grants=False):
                                           'Sivug Spent', 'Sivug Remaining',
                                           'Percentage Spent'])
     for sivug in cur_grant.keys():
+        if grant_info['Grant Number'] in ["3015002026", "3186000162"]:
+            currency_const = 3.5
+        else:
+            currency_const = 1.0
         cur_sivug = cur_grant[sivug]
         sivug_total = cur_sivug['Amount']
         sivug_spent_sql = "SELECT price, amount FROM orders WHERE sivug_number = %s" % sivug
@@ -276,7 +285,7 @@ def show_sivugim(db_path, grant_info, all_grants=False):
         if len(sivug_item_prices) > 0:
             sivug_spent = 0
             for item in sivug_item_prices:
-                sivug_spent += item[0] * item[1] * 1.17
+                sivug_spent += item[0] * item[1] * TAX_CONST / currency_const
         else:
             sivug_spent = 0
         sivug_remaining = sivug_total - sivug_spent
@@ -303,6 +312,10 @@ def show_grant_and_sivugim(db_path):
                                           'Percentage Spent', 'Shared Index', 'Amount Shared Total',
                                           'Amount Shared Spent', 'Amount Shared Remaining'])
     for grant in GRANT_DICTS.keys():
+        if grant in ["3015002026", "3186000162"]:
+            currency_const = 3.5
+        else:
+            currency_const = 1.0
         cur_grant = GRANT_DICTS[grant]
         shared_dict = {}
         for sivug in cur_grant.keys():
@@ -318,7 +331,7 @@ def show_grant_and_sivugim(db_path):
         sivug_item_prices = cur.fetchall()
         for item in sivug_item_prices:
             try:
-                shared_dict[cur_grant[str(item[0])]['Shared']]['Spent'] += item[1] * item[2]
+                shared_dict[cur_grant[str(item[0])]['Shared']]['Spent'] += item[1] * item[2] * TAX_CONST / currency_const
             except KeyError:
                 print("Check your Sivugim! Sivug number %s of them does not exist." % str(item[0]))
 
@@ -337,7 +350,7 @@ def show_grant_and_sivugim(db_path):
             if len(sivug_item_prices) > 0:
                 sivug_spent = 0
                 for item in sivug_item_prices:
-                    sivug_spent = item[0] * item[1]
+                    sivug_spent = item[0] * item[1] / currency_const
             else:
                 sivug_spent = 0
             sivug_remaining = sivug_total - sivug_spent

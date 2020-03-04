@@ -358,7 +358,8 @@ def gui_show_query_table(db_path, df):
     if event in (None, 'Exit'):
         window.close()
         return False
-    elif event in ('Show total'):
+    elif event in ('Show Total'):
+        print(df['Price'].sum())
         gui_message("Total cost: %f" %(df['Price'].sum()))
     elif event in ('Update Order'):
         try:
